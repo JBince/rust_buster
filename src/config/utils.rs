@@ -1,8 +1,9 @@
-use crate::DEFAULT_STATUS_CODES;
+use crate::ALL_STATUS_CODES;
 
 pub(super) fn status_codes() -> Vec<u16> {
-    DEFAULT_STATUS_CODES
+    ALL_STATUS_CODES
     .iter()
     .map(|code| code.as_u16())
     .collect()
 }
+

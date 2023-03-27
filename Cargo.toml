@@ -1,7 +1,8 @@
 [package]
-name = "dir_buster"
+name = "rust_buster"
 version = "0.1.0"
 edition = "2021"
+authors = ["Placeholder"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -10,3 +11,6 @@ console = "0.15.5"
 clap = { version = "4.1.11", features = ["derive"] }
 reqwest = {version = "0.11.15", features = ["json"]}
 anyhow = "1.0.70"
+tokio = {version = "1", features = ["full"]}
+rayon = "1.7"
+futures = "0.3"

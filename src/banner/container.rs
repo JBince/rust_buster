@@ -1,8 +1,8 @@
-use std::{fmt::format, sync::Arc};
 use super::entry::BannerEntry;
-use crate::{VERSION, config::Configuration};
-use console::style;
+use crate::{config::Configuration, AUTHOR, VERSION};
 use anyhow::Result;
+use console::style;
+use std::sync::Arc;
 
 pub struct Banner {
     //The live target
@@ -18,20 +18,19 @@ pub struct Banner {
     wordlist: BannerEntry,
 
     //Version of the tool
-
     version: String,
+
+    //Author of the tool
+    author: String,
 }
 
 impl Banner {
-    pub fn new(config: &Configuration) -> Self {
-
+    pub fn new(config: Arc<Configuration>) -> Self {
         //Define the target
         let target = BannerEntry::new("Target", &config.url);
 
-
         //Take selected status codes and convert them to a usable banner entry
         let status_codes = {
-
             let mut codes = Vec::new();
 
             for code in &config.status_codes {
@@ -53,6 +52,7 @@ impl Banner {
             threads,
             wordlist,
             version: VERSION.to_string(),
+            author: AUTHOR.to_string(),
         }
     }
 
@@ -60,15 +60,17 @@ impl Banner {
         let artwork = format!(
             //https://onlineasciitools.com/convert-text-to-ascii-art Alligator 2 font
             r#"
-      ::::::::: ::::::::::: :::::::::       :::::::::  :::    :::  :::::::: ::::::::::: :::::::::: ::::::::: 
-     :+:    :+:    :+:     :+:    :+:      :+:    :+: :+:    :+: :+:    :+:    :+:     :+:        :+:    :+: 
-    +:+    +:+    +:+     +:+    +:+      +:+    +:+ +:+    +:+ +:+           +:+     +:+        +:+    +:+  
-   +#+    +:+    +#+     +#++:++#:       +#++:++#+  +#+    +:+ +#++:++#++    +#+     +#++:++#   +#++:++#:    
-  +#+    +#+    +#+     +#+    +#+      +#+    +#+ +#+    +#+        +#+    +#+     +#+        +#+    +#+    
- #+#    #+#    #+#     #+#    #+#      #+#    #+# #+#    #+# #+#    #+#    #+#     #+#        #+#    #+#     
-######### ########### ###    ###      #########   ########   ########     ###     ########## ###    ###                                                            
-                                                                                                ver: {}"#,
-            self.version
+      :::::::::  :::    :::  :::::::: :::::::::::       :::::::::  :::    :::  :::::::: ::::::::::: :::::::::: ::::::::: 
+     :+:    :+: :+:    :+: :+:    :+:    :+:           :+:    :+: :+:    :+: :+:    :+:    :+:     :+:        :+:    :+: 
+    +:+    +:+ +:+    +:+ +:+           +:+           +:+    +:+ +:+    +:+ +:+           +:+     +:+        +:+    +:+  
+   +#++:++#:  +#+    +:+ +#++:++#++    +#+           +#++:++#+  +#+    +:+ +#++:++#++    +#+     +#++:++#   +#++:++#:    
+  +#+    +#+ +#+    +#+        +#+    +#+           +#+    +#+ +#+    +#+        +#+    +#+     +#+        +#+    +#+    
+ #+#    #+# #+#    #+# #+#    #+#    #+#           #+#    #+# #+#    #+# #+#    #+#    #+#     #+#        #+#    #+#     
+###    ###  ########   ########     ###           #########   ########   ########     ###     ########## ###    ###                                                                                                      
+
+ver: {} author: {}
+"#,
+            self.version, self.author
         );
         let top = "───────────────────────────┬──────────────────────";
         format!("{artwork}\n{top}")
@@ -76,11 +78,22 @@ impl Banner {
     fn footer(&self) -> String {
         let bottom = "───────────────────────────┴──────────────────────";
         let instructions = format!(
-            "\nPress {} to stop the scan at any time.\n",style("CTRL+C").yellow()
+            "\nPress {} to stop the scan at any time.\n",
+            style("CTRL+C").yellow()
         );
-        format!("{bottom}\n{instructions}")
+        let extra_line = "──────────────────────────────────────────────────";
+        let column_headers = format!(
+            "{:\u{0020}<width$}{:\u{0020}<width$}{:\u{0020}<width$}{:\u{0020}<width$}{:\u{0020}<width$}\n",
+            style("Request").bold(),
+            style("Status").bold(),
+            style("Method").bold(),
+            style("Length").bold(),
+            style("Endpoint").bold(),
+            width = 15
+        );
+        format!("{bottom}\n{instructions}\n{extra_line}\n{column_headers}")
     }
-    pub fn print_to<W>(&self, mut writer: W, config: Arc<Configuration>) -> Result<()>
+    pub fn print_to<W>(&self, mut writer: W) -> Result<()>
     where
         W: std::io::Write,
     {
@@ -90,6 +103,6 @@ impl Banner {
         writeln!(&mut writer, "{}", self.threads)?;
         writeln!(&mut writer, "{}", self.wordlist)?;
         writeln!(&mut writer, "{}", self.footer())?;
-    Ok(())
+        Ok(())
     }
 }
