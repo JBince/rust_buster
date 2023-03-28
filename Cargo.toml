@@ -2,7 +2,7 @@
 name = "rust_buster"
 version = "0.1.0"
 edition = "2021"
-authors = ["Placeholder"]
+authors = ["AJP"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -14,3 +14,4 @@ anyhow = "1.0.70"
 tokio = {version = "1", features = ["full"]}
 rayon = "1.7"
 futures = "0.3"
+indicatif = "0.17.3"

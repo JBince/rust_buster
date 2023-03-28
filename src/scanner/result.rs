@@ -58,7 +58,7 @@ impl fmt::Display for ResultEntry {
                 _ => style(&self.status).blue(),
             },
             self.method,
-            format!("{}C", self.length),
+            format!("{}c", self.length),
             self.endpoint,
             //style(&self.redirection).yellow(),
             width = COL_WIDTH

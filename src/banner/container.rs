@@ -72,11 +72,11 @@ ver: {} author: {}
 "#,
             self.version, self.author
         );
-        let top = "───────────────────────────┬──────────────────────";
+        let top = "───────────────────────────┬────────────────────────────────────────────────────────";
         format!("{artwork}\n{top}")
     }
     fn footer(&self) -> String {
-        let bottom = "───────────────────────────┴──────────────────────";
+        let bottom = "───────────────────────────┴────────────────────────────────────────────────────────";
         let instructions = format!(
             "\nPress {} to stop the scan at any time.\n",
             style("CTRL+C").yellow()

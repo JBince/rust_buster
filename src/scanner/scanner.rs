@@ -1,8 +1,11 @@
 use crate::config::Configuration;
 use crate::scanner::result::*;
 use anyhow::Result;
-use rayon::{prelude::*, ThreadPoolBuildError};
+use indicatif::{ProgressBar, ProgressStyle};
+#[allow(unused)]
+use rayon::{prelude::*, ThreadPool, ThreadPoolBuildError};
 use std::sync::Arc;
+use tokio::runtime::Builder;
 
 pub struct Scanner {
     pub(super) target_url: String,
@@ -10,7 +13,6 @@ pub struct Scanner {
     status_codes: Vec<u16>,
     method: String,
     threads: usize,
-    request_number: u16,
 }
 
 impl Scanner {
@@ -25,31 +27,51 @@ impl Scanner {
             status_codes: config.status_codes.clone(),
             method: config.method.clone(),
             threads: config.threads,
-            request_number: 1,
         }
     }
+
     pub fn scan_url(&self) -> Result<()> {
-        //Create the global thread pool
+        //Uncomment to create a thread pool for use with rayon
         //self.create_global_pool()?;
 
         let mut request_number = 1 as u16;
 
-        //Execute that code within the thread pool to control the number of threads used
-        self.wordlist.iter().for_each(|word| {
-            match self.probe(word.to_string(), request_number.clone()) {
-                Ok(()) => (),
-                Err(e) => println!("{}", e),
+        let bar = ProgressBar::new(self.wordlist.len() as u64);
+        bar.set_style(
+            ProgressStyle::default_bar()
+                .template("[{elapsed_precise}] {bar:40.cyan/blue} {pos:>7}/{len:7} {msg}")
+                .unwrap(),
+        );
+
+        //Creates multithreaded runtime context for testing endpoints
+        let rt = Builder::new_multi_thread()
+            .enable_all()
+            .worker_threads(self.threads)
+            .build()
+            .unwrap();
+
+        //Needs to be changed to .spawn() instead of block_on() to facilitate multithreading
+
+        rt.block_on(async {
+            for word in self.wordlist.iter() {
+                match self.probe(word.to_string(), request_number.clone()).await {
+                    Ok(result) => {
+                        ProgressBar::println(&bar, result);
+                    }
+                    Err(_) => (),
+                };
+                request_number += 1;
+                bar.inc(1);
             }
-            request_number += 1;
         });
+        bar.finish();
         Ok(())
     }
 
-    #[tokio::main]
-    async fn probe(&self, word: String, request_number: u16) -> Result<()> {
+    //#[tokio::main]
+    async fn probe(&self, word: String, request_number: u16) -> Result<String> {
         let response = reqwest::get(format!("{}{}", &self.target_url, word)).await?;
         let status_code = response.status().as_u16();
-        //total_requests += 1;
         if self.status_codes.contains(&status_code) {
             let method = self.method.clone();
             let content_length = response.content_length().unwrap() as u16;
@@ -61,16 +83,20 @@ impl Scanner {
                 endpoint,
                 request_number,
             );
-            println!("{}", result);
+            Ok(format!("{}", result))
+        } else {
+            Err(anyhow::anyhow!("Unacceptable status code"))
         }
-        Ok(())
     }
 
-    pub fn create_global_pool(&self) -> Result<(), ThreadPoolBuildError> {
+    //Generates global thread pool for use with Rayon multithreading. Generally less efficient than using
+    //Asynchronous requests, but might be useful for some cases. Must explore further.
+
+    pub fn create_global_pool(&self) -> Result<ThreadPool, ThreadPoolBuildError> {
         //Function to create thread pool based on the provided number of threads
         rayon::ThreadPoolBuilder::new()
             .num_threads(self.threads)
-            .build_global()
+            .build()
     }
 
     pub async fn test_connection(&self) -> Result<()> {

@@ -30,7 +30,7 @@ impl Configuration {
         Configuration {
             url: String::new(),
             status_codes: status_codes(),
-            threads: 10,
+            threads: 4,
             wordlist: String::new(),
             method: String::new(),
         }
